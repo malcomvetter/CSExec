@@ -1,4 +1,4 @@
-# CSExec (a c sharp psexec implementation)
+# CSExec (a C Sharp psexec implementation)
 
 This is an example for how to implement `psexec` (from SysInternals Suite) functionality, but in open source C#. This does not implement all of the psexec functionality, but it does implement the equivalent functionality to running: `psexec -s \\target-host cmd.exe`
 
