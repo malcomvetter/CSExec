@@ -2,6 +2,7 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 
 namespace csexec
 {
@@ -9,7 +10,7 @@ namespace csexec
     {
         static void Main(string[] args)
         {
-            if (args.Length <1)
+            if (args.Length < 1)
             {
                 PrintUsage();
                 return;
@@ -18,9 +19,30 @@ namespace csexec
 #if DEBUG
             Console.WriteLine("[*] hostname: {0}", hostname);
 #endif
-
             var version = GetDotNetVersion(hostname);
+            CopyServiceExe(version, hostname);
+            InstallService(hostname, version);
+            try
+            {
+                CSExecClient.Connect(hostname);
+            }
+            catch (TimeoutException te)
+            {
+                Console.WriteLine(te.Message);
+            }
+            UninstallService(hostname);
+            DeleteServiceExe(hostname);
+        }
 
+        static void PrintUsage()
+        {
+            Console.WriteLine("This is similar to psexec -s \\\\hostname cmd.exe");
+            Console.WriteLine("Syntax: ");
+            Console.WriteLine("csexec.exe \\\\{hostname}");
+        }
+
+        private static void CopyServiceExe(DotNetVersion version, string hostname)
+        {
             byte[] svcexe = new byte[0];
             if (version == DotNetVersion.net35)
             {
@@ -38,29 +60,38 @@ namespace csexec
             try
             {
                 File.WriteAllBytes(path, svcexe);
-            } catch (UnauthorizedAccessException uae)
+#if DEBUG
+                Console.WriteLine("[*] Copied {0} service executable to {1}", version, hostname);
+#endif
+            }
+            catch (UnauthorizedAccessException uae)
             {
                 Console.WriteLine(uae.Message);
                 return;
             }
-
-            InstallService(hostname, version);
-            try
-            {
-                CSExecClient.Connect(hostname);
-            }
-            catch (TimeoutException te)
-            {
-                Console.WriteLine(te.Message);
-            }
-            UninstallService(hostname);
         }
 
-        static void PrintUsage()
+        private static void DeleteServiceExe(string hostname)
         {
-            Console.WriteLine("This is similar to psexec -s \\\\hostname cmd.exe");
-            Console.WriteLine("Syntax: ");
-            Console.WriteLine("csexec.exe \\\\{hostname}");
+            var path = hostname + @"\admin$\system32\csexecsvc.exe";
+            var max = 5;
+            for (int i = 0; i < max; i++)
+            {
+                try
+                {
+                    Thread.Sleep(1000);
+                    File.Delete(path);
+                    i = max;
+#if DEBUG
+                    Console.WriteLine("[*] Deleted service executable from {0}", hostname);
+#endif
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    return;
+                }
+            }
         }
 
         static void InstallService(string hostname, DotNetVersion version)
@@ -100,7 +131,6 @@ namespace csexec
 #if DEBUG
                     Console.WriteLine("[*] Installed {0} Service on {1}", version, hostname);
 #endif
-
                     NativeMethods.StartService(serviceHandle, 0, null);
 #if DEBUG
                     Console.WriteLine("[*] Service Started on {0}", hostname);
@@ -123,9 +153,10 @@ namespace csexec
                     {
                         throw new Win32Exception();
                     }
+                    
                     NativeMethods.DeleteService(serviceHandle);
 #if DEBUG
-                    Console.WriteLine("[*] Service Deleted from {0}", hostname);
+                    Console.WriteLine("[*] Service Uninstalled from {0}", hostname);
 #endif
                 }                
             }
@@ -133,9 +164,20 @@ namespace csexec
         public static DotNetVersion GetDotNetVersion(string hostname)
         {
             var version = DotNetVersion.net20;
-            var path = string.Format("{0}\\admin$\\Microsoft.NET\\Framework64", hostname);
-            var directory = new DirectoryInfo(path);
-            foreach (var dir in directory.GetDirectories())
+            var path1 = string.Format("{0}\\admin$\\Microsoft.NET\\Framework64", hostname);
+            var path2 = string.Format("{0}\\admin$\\Microsoft.NET\\Framework", hostname);
+            DirectoryInfo[] directories;
+            try
+            {
+                var directory = new DirectoryInfo(path1);
+                directories = directory.GetDirectories();
+            }
+            catch (IOException)
+            {
+                var directory = new DirectoryInfo(path2);
+                directories = directory.GetDirectories();
+            }
+            foreach (var dir in directories)
             {
                 var name = dir.Name.Substring(0, 4);
 #if DEBUG
@@ -143,14 +185,14 @@ namespace csexec
 #endif
                 switch (name)
                 {
-                    case "v3.5":
-                        version = DotNetVersion.net35;
+                    case "v4.5":
+                        version = DotNetVersion.net45;
                         break;
                     case "v4.0":
                         version = DotNetVersion.net40;
                         break;
-                    case "v4.5":
-                        version = DotNetVersion.net45;
+                    case "v3.5":
+                        version = DotNetVersion.net35;
                         break;
                     default:
                         continue;

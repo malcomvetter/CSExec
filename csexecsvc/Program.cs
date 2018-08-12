@@ -24,7 +24,9 @@ namespace csexecsvc
 
         protected override void OnStart(string[] args)
         {
+#if DEBUG
             Console.WriteLine("Service Started.");
+#endif
             new Thread(workerthread) { IsBackground = true, Name = _ServiceName }.Start();
         }
 
@@ -41,17 +43,23 @@ namespace csexecsvc
                 NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Message))
             {
+#if DEBUG
                 Console.WriteLine("[*] Waiting for client connection...");
+#endif
                 pipe.WaitForConnection();
+#if DEBUG
                 Console.WriteLine("[*] Client connected.");
+#endif
                 while (true)
                 {
                     var messageBytes = ReadMessage(pipe);
                     var line = Encoding.UTF8.GetString(messageBytes);
+#if DEBUG
                     Console.WriteLine("[*] Received: {0}", line);
-                    if (line.ToLower() == "exit")
+#endif
+                    if (line.ToLower().Trim() == "exit")
                     {
-                        OnStop();
+                        Process.GetCurrentProcess().Kill();
                         return;
                     }
 
@@ -78,7 +86,9 @@ namespace csexecsvc
                     }
                     catch (Exception ex)
                     {
+#if DEBUG
                         Console.WriteLine(ex);
+#endif
                         var response = Encoding.UTF8.GetBytes(ex.Message);
                         pipe.Write(response, 0, response.Length);
                     }
