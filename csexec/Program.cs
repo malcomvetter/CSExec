@@ -1,7 +1,8 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace csexec
@@ -16,6 +17,26 @@ namespace csexec
                 return;
             }
             var hostname = args[0];
+
+            var initialCommand = string.Empty;
+            var stopAfterInitialCommand = false;
+
+            if (args.Length > 1)
+            {
+                if (args[1] == "cmd")
+                {
+                    initialCommand = string.Join(" ", args.Skip(2).ToArray());
+
+                    if (args.Length > 2)
+                    {
+                        if (args[2] == "/c")
+                        {
+                            stopAfterInitialCommand = true;
+                        }
+                    }
+                }
+            }
+
 #if DEBUG
             Console.WriteLine("[*] hostname: {0}", hostname);
 #endif
@@ -24,7 +45,7 @@ namespace csexec
             InstallService(hostname, version);
             try
             {
-                CSExecClient.Connect(hostname);
+                CSExecClient.Connect(hostname, initialCommand, stopAfterInitialCommand);
             }
             catch (TimeoutException te)
             {
@@ -38,7 +59,7 @@ namespace csexec
         {
             Console.WriteLine("This is similar to psexec -s \\\\hostname cmd.exe");
             Console.WriteLine("Syntax: ");
-            Console.WriteLine("csexec.exe \\\\{hostname}");
+            Console.WriteLine("csexec.exe \\\\{hostname} [cmd [/c] [<string>]]");
         }
 
         private static void CopyServiceExe(DotNetVersion version, string hostname)
