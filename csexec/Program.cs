@@ -25,15 +25,35 @@ namespace csexec
             {
                 if (args[1] == "cmd")
                 {
-                    initialCommand = string.Join(" ", args.Skip(2).ToArray());
+                    int initialCommandArgsSkip = 2;
 
                     if (args.Length > 2)
                     {
-                        if (args[2] == "/c")
+                        var cParameter = "/c";
+                        if (args[2] == cParameter)
                         {
                             stopAfterInitialCommand = true;
+                            ++initialCommandArgsSkip;
                         }
                     }
+
+                    initialCommand = string.Join(" ",
+                        args.Skip(initialCommandArgsSkip)
+                            .Select(arg =>
+                            {
+                                if (arg.Contains(" "))
+                                {
+                                    if (arg.EndsWith(@"\"))
+                                    {
+                                        arg += @"\"; // add backslash to ensure existing backslash is not evaluated as escape char for trailing quote char
+                                    }
+
+                                    arg = $"\"{arg}\"";
+                                }
+
+                                return arg;
+                            })
+                            .ToArray());
                 }
             }
 
