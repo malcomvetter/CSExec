@@ -48,6 +48,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(SolutionDir)csexec\Resources\csexecsvc-net45.exe"</PostBuildEvent>
+    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)..\csexec\Resources\csexecsvc-net45.exe"</PostBuildEvent>
   </PropertyGroup>
 </Project>
