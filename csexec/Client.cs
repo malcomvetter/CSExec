@@ -40,6 +40,7 @@ namespace csexec
 
             byte[] bytes = Encoding.Default.GetBytes(command);
             pipe.Write(bytes, 0, bytes.Length);
+            pipe.Flush();
 
             var result = ReadMessage(pipe);
 
