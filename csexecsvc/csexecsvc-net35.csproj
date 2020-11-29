@@ -7,7 +7,7 @@
     <ProjectGuid>{41A90A6A-F9ED-4A2F-8448-D544EC1FD753}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>csexecsvc</RootNamespace>
-    <AssemblyName>csexecsvc</AssemblyName>
+    <AssemblyName>csexecsvc-net35</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
