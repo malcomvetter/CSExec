@@ -1,3 +1,7 @@
+# User-specific files
+*.suo
+*.user
+
 # Copied service binaries
 csexec/Resources/csexecsvc*
 
